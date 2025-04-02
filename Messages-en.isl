@@ -7,14 +7,14 @@ FinishedLabel=Setup has finished installing [name] on your computer.
 
 [CustomMessages]
 ; [Icons]
-IconsSelectNetworkProfileName=Select DNS-O-Matic Network Profile
-IconsSelectNetworkProfileComment=Specifies the network profile to use for DNS-O-Matic updates.
+IconsSelectNetworkProfileName=Select DNS-O-Matic Network Profiles
+IconsSelectNetworkProfileComment=Select network profiles to use for DNS-O-Matic updates.
 IconsUpdateCredentialsName=Update DNS-O-Matic Credentials
 IconsUpdateCredentialsComment=Specifies the credentials to use for DNS-O-Matic updates.
 IconsUpdate=Update DNS-O-Matic
 IconsUpdateComment=Update DNS-O-Matic.
 ; [Tasks]
-TasksUpdateNetworkProfile=Update n&etwork profile
+TasksUpdateNetworkProfile=Update n&etwork profiles
 TasksUpdateCredentials=Update &credentials
 TasksUseScheduledTask=Use &scheduled task for updates
 ; [Run]

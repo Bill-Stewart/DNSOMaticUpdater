@@ -26,7 +26,7 @@ https://github.com/Bill-Stewart/DNSOMaticUpdater/releases/latest
 
 **DNS-O-Matic Updater** is a Windows application that updates the [DNS-O-Matic](https://www.dnsomatic.com/) service with the current Internet connection's external (public) IP address.
 
-**DNS-O-Matic Updater** only performs DNS updates when connected to the Internet using a specific network profile. This is a safeguard to make sure you don't accidentally request updates when connected to a network than the one where updates should normally occur. (This is especially important for portable computers that connect to multiple networks.) See [About Network Profiles](#about-network-profiles) for more information.
+**DNS-O-Matic Updater** only performs DNS updates when connected to the Internet using one or more network profiles. This is a safeguard to make sure you don't accidentally request updates when connected to networks other than where updates should normally occur. (This is especially important for portable computers that connect to multiple networks.) See [About Network Profiles](#about-network-profiles) for more information.
 
 ## System Requirements
 
@@ -50,11 +50,11 @@ Before the installer completes, it will display a Windows PowerShell console (te
 
 If you have already installed the application and you run the installer again, you will see the following options on the **Select Additional Tasks** wizard page:
 
-* **Update network profile**
+* **Update network profiles**
 * **Update credentials**
 * **Use scheduled task for updates**
 
-If the name of your network profile has changed (for example, you replaced your WiFi router and your new network has a different name), select the **Update network profile** option to specify the name of the network profile you want to use. See [About Network Profiles](#about-network-profiles) for more information.
+If the name of your network profile has changed (for example, you replaced your WiFi router and your new network has a different name), select the **Update network profiles** option to select the network profiles you want to use. See [About Network Profiles](#about-network-profiles) for more information.
 
 If you have changed your DNS-O-Matic password, select the **Update credentials** option to re-enter the DNS-O-Matic username and password.
 
@@ -62,30 +62,34 @@ If you want to perform DNS-O-Matic updates automatically every 5 minutes, select
 
 ## About Network Profiles
 
-As noted in the [Introduction](#introduction), DNS-O-Matic Updater only performs updates when the computer is connected to the Internet using a specific network profile. The network profile is the Windows operating system's name for the network to which the computer connects. Different networks will be labeled with different names. Windows automatically chooses names for wired and wireless networks. Wireless networks are usually named after the WiFi SSID.
+As noted in the [Introduction](#introduction), DNS-O-Matic Updater only performs updates when the computer is connected to the Internet using specific network profiles. A _network profile_ is the Windows operating system's name for a network to which the computer connects. Different networks will be labeled with different names. Windows automatically chooses names for wired and wireless networks. Wireless networks are usually named after the WiFi SSID.
 
 When you first install **DNS-O-Matic Updater**, you will see a PowerShell console (text-based) window requesting the name of the network you want to use. It looks something like this:
 
 ```
-Please select a network profile for performing DNS updates. The script will only perform updates when connected to the Internet using the selected network profile. -> indicates the currently active network profile.
+Please select network profiles for performing DNS updates. The script will
+only perform updates when connected to the Internet using any of the selected
+network profiles. -> indicates currently active network profiles.
 
    #    Network Profile
    ---  ---------------
-   1    Local Area Connection* 10
-   2    Network 2
-   3    NetGuest
--> 4    stablewifi
-   5    wlan 2
+   1    Local Area Connection
+   2    Local Area Connection* 10
+   3    Network 2
+-> 4    NordLynx
+   5    NynexNet321
+-> 6    stablewifi
+   7    wlan 2
 
-Select a network profile (1-5, Enter=4):
+Enter network profile numbers separated by spaces [Enter=active]:
 ```
 
-The `->` indicator points at the computer's current active network profile. To select this network, simply press `Enter` without entering a number. DNS-O-Matic updates will only occur if the computer is connected to the Internet using the network profile you select.
+The `->` indicators point at the computer's current active network profiles. To select the active profiles, simply press `Enter` without entering a number. DNS-O-Matic updates will only occur if the computer is connected to the Internet using any of these profiles.
 
-After you have installed **DNS-O-Matic Updater**, you can easily choose a new network profile if needed. To choose a new network profile, do one of the following:
+After you have installed **DNS-O-Matic Updater**, you can easily choose new network profiles if needed. To choose new network profiles, do one of the following:
 
-* Reinstall the application and choose the **Update network profile** option on the **Select Additional Tasks** wizard page
-* If you elected to create Start menu shortcuts, open the **Select DNS-O-Matic Profile** shortcut in the Windows Start menu
+* Reinstall the application and choose the **Update network profiles** option on the **Select Additional Tasks** wizard page
+* If you elected to create Start menu shortcuts, open the **Select DNS-O-Matic Network Profiles** shortcut in the Windows Start menu
 
 ## Changing the DNS-O-Matic Credentials
 
@@ -96,7 +100,7 @@ When you first install **DNS-O-Matic Updater**, it prompts for your DNS-O-Matic 
 
 ## Uninstallation
 
-You can uninstall **DNS-O-Matic Updater** from the standard Windows application list. The uninstaller will ask if it should remove all configuration and log files. If you intend to reinstall the application, you can answer "no" (in this case, you will not need to select a network profile and re-enter credentials). If you answer "yes" to this question, you will need to select a network profile and enter credentials again if you decide to reinstall.
+You can uninstall **DNS-O-Matic Updater** from the standard Windows application list. The uninstaller will ask if it should remove all configuration and log files. If you intend to reinstall the application, you can answer "no" (in this case, you will not need to select network profiles and re-enter credentials). If you answer "yes" to this question, you will need to select network profiles and enter credentials again if you decide to reinstall.
 
 ## Automatic DNS-O-Matic Updates using the Windows Task Scheduler
 
@@ -137,11 +141,17 @@ In the log, the script's output is the line immediately following the line that 
 
 That is, the DNS-O-Matic service successfully registered an update ("good") with the external IP address (`1.2.3.4` in this example).
 
-You will also see:
+You can also see:
 
-    Skipping update: External IP address still '1.2.3.4'
+    Skipping update; External IP address still 1.2.3.4
 
 The PowerShell script records the IP address of the last update and skips the update request if the external IP address hasn't changed.
+
+If your computer's current active network profiles don't match any of the network profiles you selected, you will see:
+
+    Skipping update; current network profiles:
+
+...followed by a list of computer's current active network profiles.
 
 ## Technical Details
 

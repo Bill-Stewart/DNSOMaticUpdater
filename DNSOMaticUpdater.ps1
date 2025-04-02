@@ -17,7 +17,7 @@ Gets the current external IP address.
 Performs initial setup: Configures network profile and credentials.
 
 .PARAMETER SelectNetworkProfile
-Updates the network profile used for DNS-O-Matic updates based on a selection.
+Updates the network profiles used for DNS-O-Matic updates based on a selection.
 
 .PARAMETER SetCredentials
 Updates the credentials used for connecting to the DNS-O-Matic service.
@@ -37,11 +37,11 @@ Records activity to a log file for later inspection (useful for scheduling).
 .NOTES
 This script uses the following configuration files:
 
-* NetworkProfile.txt - Network profile to use for updates
+* NetworkProfile.txt - Network profiles to use for updates
 * Credentials.dat - Credentials used by the service
 * LastIP.txt - External IP address from the previous update
 
-If NetworkProfile.txt is missing, the script will prompt for a network profile (-SelectNetworkProfile), which requires elevation ('Run as administrator'). Alternatively, you can specify -NetworkProfile to specify a network profile name, or you can specify -UserCurrentNetworkProfile to specify the current network profile.
+If NetworkProfile.txt is missing, the script will prompt for network profiles (-SelectNetworkProfile), which requires elevation ('Run as administrator').
 
 If Credentials.dat is missing, the script will prompt for service credentials and create the file.
 #>
@@ -82,7 +82,7 @@ param(
   $Log
 )
 
-$VersionTag  = "v0.0.1"
+$VersionTag  = "v0.0.2"
 $ServiceName = "DNS-O-Matic"
 $GetIPURL    = "http://myip.dnsomatic.com/"
 $UpdateURL   = "https://updates.dnsomatic.com/nic/update/"
@@ -106,17 +106,17 @@ function Get-NetworkProfile {
   Get-NetConnectionProfile | Select-Object -ExpandProperty Name
 }
 
-# Displays a list of network profiles, prompts for one from a list, and saves
-# the name of the selected profile to $NetworkProfilePath
+# Displays a list of network profiles, prompts for selection, and saves
+# the names of the selected profiles to $NetworkProfilePath
 function Select-NetworkProfile {
   $elevated = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
   if ( -not $elevated ) {
     Write-Error "This operation requires elevation ('Run as adminstrator'). Please restart PowerShell using the 'Run as administratror' option and try again." -Category PermissionDenied
     exit
   }
-  $activeNetworkProfile = Get-NetworkProfile
-  if ( $null -eq $activeNetworkProfile ) {
-    Write-Error "Unable to determine current network profile." -Category ObjectNotFound
+  $activeNetworkProfiles = Get-NetworkProfile
+  if ( $null -eq $activeNetworkProfiles ) {
+    Write-Error "Unable to determine current network profiles." -Category ObjectNotFound
     exit
   }
   $rootPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles"
@@ -129,16 +129,16 @@ function Select-NetworkProfile {
     exit
   }
   Write-Host
-  Write-Host "Please select a network profile for performing DNS updates. The script will"
-  Write-Host "only perform updates when connected to the Internet using the selected network"
-  Write-Host "profile. -> indicates the currently active network profile."
+  Write-Host "Please select network profiles for performing DNS updates. The script will"
+  Write-Host "only perform updates when connected to the Internet using any of the selected"
+  Write-Host "network profiles. -> indicates currently active network profiles."
   Write-Host
   Write-Host "   #    Network Profile"
   Write-Host "   ---  ---------------"
-  $defaultIndex = 0
+  $defaultIndexes = @()
   for ( $i = 0; $i -lt $profiles.Count; $i++ ) {
-    if ( $profiles[$i] -eq $activeNetworkProfile ) {
-      $defaultIndex = $i
+    if ( $activeNetworkProfiles -contains $profiles[$i] ) {
+      $defaultIndexes += $i
       Write-Host ("-> {0,-4} {1}" -f ($i + 1),$profiles[$i])
     }
     else {
@@ -147,14 +147,22 @@ function Select-NetworkProfile {
   }
   Write-Host
   while ( $true ) {
-    $value = Read-Host ("Select a network profile (1-{0}, Enter={1})" -f ($profiles.Count),($defaultIndex + 1))
+    $value = Read-Host ("Enter network profile numbers separated by spaces [Enter=active]" -f $profiles.Count)
     if ( $value.Trim() -eq "" ) {
-      $choice = $defaultIndex + 1
+      $choices = $defaultIndexes | ForEach-Object { $_ + 1 }
       break
     }
-    $choice = $value -as [Int]
-    if ( 1..$profiles.Count -contains $choice ) { break }
-    Write-Host "Invalid selection"
+    $values = $value.Trim() -split '[ ,]'
+    $choices = @()
+    foreach ( $value in $values ) {
+      if ( 1..$profiles.Count -notcontains $value ) {
+        $choices = @()
+        break
+      }
+      $choices += $value -as [Int]
+    }
+    if ( $choices.Count -gt 0 ) { break }
+    Write-Host "Invalid selection."
   }
   $params = @{
     "FilePath"    = $NetworkProfileFilePath
@@ -162,12 +170,16 @@ function Select-NetworkProfile {
     "Force"       = $true
     "ErrorAction" = "Stop"
   }
-  $profiles[--$choice] | Out-File @params
-  Write-Host ("Selected network profile: {0}" -f $profiles[$choice])
+  $profileNames = $choices | ForEach-Object {
+    $profiles[$_ - 1]
+  }
+  $profileNames | Out-File @params
+  Write-Host ("Selected network profiles:{0}{1}" -f [Environment]::NewLine,
+    ($profileNames -join [Environment]::NewLine))
 }
 
 function Get-RequestedNetworkProfile {
-  $errorMsg = "Network profile not specified or not valid. Please use the -SelectNetworkProfile parameter to select a network profile."
+  $errorMsg = "Network profiles not specified or not valid. Please use the -SelectNetworkProfile parameter to select network profiles."
   if ( -not (Test-Path $NetworkProfileFilePath) ) {
     Write-Error $errorMsg -Category InvalidData
     return
@@ -401,26 +413,28 @@ if ( $ParameterSetName -eq "GetExternalIPAddress" ) {
 
 if ( $Log ) { Start-Transcript $LogFileName -ErrorAction Stop }
 
-# Get requested network profile(s)
+# Get requested network profile
 $RequestedNetworkProfiles = Get-RequestedNetworkProfile
 if ( -not $RequestedNetworkProfiles ) {
   if ( $Log ) { Stop-Transcript }
   exit
 }
 
-# Check if current network connection profile matches what was requested
+# Check if current network connection profiles matches any of requested
 if ( $RequestedNetworkProfiles[0] -ne "<any>" ) {
-  $CurrentNetworkProfile = Get-NetworkProfile
-  if ( -not $CurrentNetworkProfile ) {
-    Write-Error "Unable to determine current network profile." -Category ObjectNotFound
+  $CurrentNetworkProfiles = Get-NetworkProfile
+  if ( -not $CurrentNetworkProfiles ) {
+    Write-Error "Unable to determine current network profiles." -Category ObjectNotFound
     if ( $Log ) { Stop-Transcript }
     exit
   }
-  if ( $RequestedNetworkProfiles -notcontains $CurrentNetworkProfile ) {
-    Write-Host ("Skipping update: Current network profile is '{0}'" -f
-      $CurrentNetworkProfile)
-    if ( $Log ) { Stop-Transcript }
-    exit
+  $RequestedNetworkProfiles | ForEach-Object {
+    if ( $CurrentNetworkProfiles -notcontains $_ ) {
+      Write-Host ("Skipping update; current network profiles:{0}{1}" -f
+        [Environment]::NewLine,($CurrentNetworkProfiles -join [Environment]::NewLine))
+      if ( $Log ) { Stop-Transcript }
+      exit
+    }
   }
 }
 
@@ -435,7 +449,7 @@ if ( -not $IPAddress ) {
 if ( -not $Force ) {
   $LastIP = Get-Content $LastIPFilePath -ErrorAction SilentlyContinue
   if ( $LastIP -eq $IPAddress ) {
-    Write-Host "Skipping update: External IP address still '$IPAddress'"
+    Write-Host "Skipping update; External IP address still $IPAddress"
     if ( $Log ) { Stop-Transcript }
     exit
   }

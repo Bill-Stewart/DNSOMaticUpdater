@@ -8,7 +8,7 @@
 #define AppID "{47DA5A3E-3DCB-4B8F-A2A5-3133AB9F3ABC}"
 #define AppName "DNS-O-Matic Updater"
 #define AppShortName "DNSOMaticUpdater"
-#define AppVersion "0.0.1"
+#define AppVersion "0.0.2"
 #define AppPublisher "Bill Stewart"
 #define AppURL "https://github.com/Bill-Stewart/DNSOMaticUpdater/"
 #define ScriptName AppShortName + ".ps1"
@@ -226,9 +226,10 @@ var
   FileNames: TArrayOfString;
   I: Integer;
 begin
-  SetArrayLength(FileNames, 2);
+  SetArrayLength(FileNames, 3);
   FileNames[0] := ExpandConstant('{app}\{#ScriptName}');
   FileNames[1] := ExpandConstant('{app}\startps.exe');
+  FileNames[2] := ExpandConstant('{uninstallexe}');
   // S-1-5-19 - Builtin 'NT AUTHORITY\LocalService' account
   // S-1-5-32-545 - Local Users group
   for I := 0 to GetArrayLength(FileNames) - 1 do
